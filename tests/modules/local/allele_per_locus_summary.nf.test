@@ -1,0 +1,25 @@
+nextflow_process {
+
+    name "Test Process ALLELE_PER_LOCUS_SUMMARY"
+    script "modules/local/allele_per_locus_summary.nf"
+    process "ALLELE_PER_LOCUS_SUMMARY"
+
+    test("Summarising allele per locus should run without failures") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/input/example2_allele_table.tsv")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.allele_summary_by_target != null
+            assert path(process.out.allele_summary_by_target.get(0)).md5 == "e42b1a113f9a6b9f5237b2710adaf236"
+        }
+
+    }
+
+}
