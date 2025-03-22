@@ -3,12 +3,15 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { FASTQC                 } from '../modules/nf-core/fastqc/main'
-include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { paramsSummaryMap       } from 'plugin/nf-schema'
-include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_plasmodiumtransmissionintensity_pipeline'
+// include { paramsSummaryMap } from 'plugin/nf-schema'
+// include { paramsSummaryMultiqc } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+// include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+// include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_plasmodiumdrugres_pipeline'
+
+// include { EXTRACT_ALLELE_TABLE } from '../modules/local/extract_allele_table'
+include { ESTIMATE_COI_NAIVE } from '../modules/local/estimate_coi_naive'
+include { COUNT_SAMPLES_BY_COI } from '../modules/local/count_samples_by_coi'
+include { RUN_MOIRE } from '../modules/local/run_moire'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,82 +19,50 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_plas
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow PLASMODIUMTRANSMISSIONINTENSITY {
-
+workflow PLASMODIUMDRUGRES {
     take:
-    ch_samplesheet // channel: samplesheet read in from --input
+    allele_table
+
     main:
 
-    ch_versions = Channel.empty()
-    ch_multiqc_files = Channel.empty()
-    //
-    // MODULE: Run FastQC
-    //
-    FASTQC (
-        ch_samplesheet
-    )
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]})
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+
+    ESTIMATE_COI_NAIVE(allele_table)
+    TRANSLATE_LOCI_OF_INTEREST(allele_table, panel_info_bed_with_ref, loci_of_interest_bed, translate_loci_extra_args)
+
+    // Estimate single locus allele prevalence
+    ESTIMATE_ALLELE_PREVALENCE_NAIVE(TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls)
+
+    // Estimate Multi Loci Allele Frequency 
+    ESTIMATE_MLAF(mlaf_method, TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls, loci_groups)
+
+    // Single locus allele frequency 
+    if (slaf_method == 'from_mlaf') {
+        ESTIMATE_SLAF(slaf_method, ESTIMATE_MLAF.out.mlaf_output)
+    } else {
+        ESTIMATE_SLAF(slaf_method, TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls)
+    }
+
+    // OUTPUT
+    CREATE_OUTPUT(ESTIMATE_SLAF.out.slaf_output, ESTIMATE_ALLELE_PREVALENCE_NAIVE.out.allele_prevalence, ESTIMATE_MLAF.out.mlaf_output)
+
 
     //
     // Collate and save software versions
     //
-    softwareVersionsToYAML(ch_versions)
-        .collectFile(
-            storeDir: "${params.outdir}/pipeline_info",
-            name: 'nf_core_'  + 'pipeline_software_' +  'mqc_'  + 'versions.yml',
-            sort: true,
-            newLine: true
-        ).set { ch_collated_versions }
+    // softwareVersionsToYAML(ch_versions)
+    //     .collectFile(
+    //         storeDir: "${params.outdir}/pipeline_info",
+    //         name: 'nf_core_' + 'pipeline_software_' + 'mqc_' + 'versions.yml',
+    //         sort: true,
+    //         newLine: true,
+    //     )
+    //     .set { ch_collated_versions }
 
-
-    //
-    // MODULE: MultiQC
-    //
-    ch_multiqc_config        = Channel.fromPath(
-        "$projectDir/assets/multiqc_config.yml", checkIfExists: true)
-    ch_multiqc_custom_config = params.multiqc_config ?
-        Channel.fromPath(params.multiqc_config, checkIfExists: true) :
-        Channel.empty()
-    ch_multiqc_logo          = params.multiqc_logo ?
-        Channel.fromPath(params.multiqc_logo, checkIfExists: true) :
-        Channel.empty()
-
-    summary_params      = paramsSummaryMap(
-        workflow, parameters_schema: "nextflow_schema.json")
-    ch_workflow_summary = Channel.value(paramsSummaryMultiqc(summary_params))
-    ch_multiqc_files = ch_multiqc_files.mix(
-        ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_custom_methods_description = params.multiqc_methods_description ?
-        file(params.multiqc_methods_description, checkIfExists: true) :
-        file("$projectDir/assets/methods_description_template.yml", checkIfExists: true)
-    ch_methods_description                = Channel.value(
-        methodsDescriptionText(ch_multiqc_custom_methods_description))
-
-    ch_multiqc_files = ch_multiqc_files.mix(ch_collated_versions)
-    ch_multiqc_files = ch_multiqc_files.mix(
-        ch_methods_description.collectFile(
-            name: 'methods_description_mqc.yaml',
-            sort: true
-        )
-    )
-
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList(),
-        [],
-        []
-    )
-
-    emit:multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
-    versions       = ch_versions                 // channel: [ path(versions.yml) ]
-
+    emit:
+    sl_summary = CREATE_OUTPUT.out.sl_summary
+    ml_summary = CREATE_OUTPUT.out.ml_summary
+    // versions = ch_versions // channel: [ path(versions.yml) ]
 }
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    THE END
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+
+// 
