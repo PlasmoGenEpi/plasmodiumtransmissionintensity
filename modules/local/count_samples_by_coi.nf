@@ -9,6 +9,12 @@ process COUNT_SAMPLES_BY_COI {
 
     input:
     path coi_calls
+    val method
+
+    publishDir(
+        path: "${params.outDIR}/COI/${method}/",
+        mode: 'copy'
+    )
 
     output:
     path ("sample_count_per_coi.tsv"), emit: sample_count_per_coi

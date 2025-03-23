@@ -8,10 +8,13 @@
 // include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 // include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_plasmodiumdrugres_pipeline'
 
-// include { EXTRACT_ALLELE_TABLE } from '../modules/local/extract_allele_table'
 include { ESTIMATE_COI_NAIVE } from '../modules/local/estimate_coi_naive'
-include { COUNT_SAMPLES_BY_COI } from '../modules/local/count_samples_by_coi'
+include { ALLELE_PER_LOCUS_SUMMARY } from '../modules/local/allele_per_locus_summary'
+include { PER_LOCUS_POPGEN_SUMMARY } from '../modules/local/per_locus_popgen_summary'
+include { DCIFER_WRAPPER } from '../modules/local/dcifer_wrapper'
 include { RUN_MOIRE } from '../modules/local/run_moire'
+include { COUNT_SAMPLES_BY_COI as COUNT_SAMPLES_BY_COI_naive } from '../modules/local/count_samples_by_coi'
+include { COUNT_SAMPLES_BY_COI as COUNT_SAMPLES_BY_COI_tool } from '../modules/local/count_samples_by_coi'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,32 +22,36 @@ include { RUN_MOIRE } from '../modules/local/run_moire'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow PLASMODIUMDRUGRES {
+workflow PLASMODIUMTRANSMISSIONINTENSITY {
     take:
-    allele_table
+    allele_table    
+    naive_coi_method
 
     main:
 
-
-    ESTIMATE_COI_NAIVE(allele_table)
-    TRANSLATE_LOCI_OF_INTEREST(allele_table, panel_info_bed_with_ref, loci_of_interest_bed, translate_loci_extra_args)
-
-    // Estimate single locus allele prevalence
-    ESTIMATE_ALLELE_PREVALENCE_NAIVE(TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls)
-
-    // Estimate Multi Loci Allele Frequency 
-    ESTIMATE_MLAF(mlaf_method, TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls, loci_groups)
-
-    // Single locus allele frequency 
-    if (slaf_method == 'from_mlaf') {
-        ESTIMATE_SLAF(slaf_method, ESTIMATE_MLAF.out.mlaf_output)
+    // Run naive coi 
+    if (naive_coi_method == "NAIVE_INT_METHOD") {
+        ESTIMATE_COI_NAIVE(allele_table, "integer_method", params.naive_coi_threshold)
+        naive_coi_output = ESTIMATE_COI_NAIVE.out.coi_table
+    } else if (naive_coi_method == "NAIVE_QUANTILE_METHOD") {
+        ESTIMATE_COI_NAIVE(allele_table, "quantile_method", params.naive_coi_threshold)
+        naive_coi_output = ESTIMATE_COI_NAIVE.out.coi_table
     } else {
-        ESTIMATE_SLAF(slaf_method, TRANSLATE_LOCI_OF_INTEREST.out.collapsed_amino_acid_calls)
+        throw new IllegalArgumentException("Error: 'naive_coi_method' must be one of ${params.coi_method_options} Provided value: ${method}.")
     }
+    COUNT_SAMPLES_BY_COI_naive(naive_coi_output, "naive")
 
-    // OUTPUT
-    CREATE_OUTPUT(ESTIMATE_SLAF.out.slaf_output, ESTIMATE_ALLELE_PREVALENCE_NAIVE.out.allele_prevalence, ESTIMATE_MLAF.out.mlaf_output)
+    // Run additional tools. 
+    // TODO: In future this could be interoperable. e.g. MALECOT
+    RUN_MOIRE(allele_table)
+    COUNT_SAMPLES_BY_COI_tool(RUN_MOIRE.out.coi_summary, "MOIRE")
 
+    // Estimate between-host relatedness 
+    DCIFER_WRAPPER(allele_table)
+
+    // Per locus metrics 
+    ALLELE_PER_LOCUS_SUMMARY(allele_table)
+    PER_LOCUS_POPGEN_SUMMARY(allele_table)
 
     //
     // Collate and save software versions
@@ -57,12 +64,4 @@ workflow PLASMODIUMDRUGRES {
     //         newLine: true,
     //     )
     //     .set { ch_collated_versions }
-
-    emit:
-    sl_summary = CREATE_OUTPUT.out.sl_summary
-    ml_summary = CREATE_OUTPUT.out.ml_summary
-    // versions = ch_versions // channel: [ path(versions.yml) ]
 }
-
-
-// 

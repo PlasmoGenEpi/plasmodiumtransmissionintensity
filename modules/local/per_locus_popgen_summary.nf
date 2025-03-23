@@ -1,11 +1,16 @@
 /*
  * STEP - PER_LOCUS_POPGEN_SUMMARY
- * Summarise total, unique, and singlet alleles called per locus
+ * Calculate simple popgen stats per locus
  */
 
 process PER_LOCUS_POPGEN_SUMMARY {
 
     label 'process_single'
+
+    publishDir(
+        path: "${params.outDIR}/per_locus_summaries/popgen",
+        mode: 'copy'
+    )
 
     input:
     path allele_table

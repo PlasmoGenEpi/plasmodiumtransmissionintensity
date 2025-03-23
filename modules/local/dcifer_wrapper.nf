@@ -9,6 +9,11 @@ process DCIFER_WRAPPER {
 
     def btwn_host_rel_output = 'btwn_host_rel.tsv'
 
+    publishDir(
+        path: "${params.outDIR}",
+        mode: 'copy'
+    )
+
     input:
     path allele_table
 

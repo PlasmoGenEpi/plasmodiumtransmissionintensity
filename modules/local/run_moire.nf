@@ -5,6 +5,12 @@
 
 process RUN_MOIRE {
 
+    publishDir "${params.outDIR}/COI/MOIRE", mode: 'copy', pattern: "coi_summary.tsv"
+    publishDir "${params.outDIR}/COI/MOIRE", mode: 'copy', pattern: "effective_coi_summary.tsv"
+    publishDir "${params.outDIR}", mode: 'copy', pattern: "he_summary.tsv"
+    publishDir "${params.outDIR}", mode: 'copy', pattern: "allele_freq_summary.tsv"
+    publishDir "${params.outDIR}", mode: 'copy', pattern: "relatedness_summary.tsv"
+
     input:
     path input_allele_table
 

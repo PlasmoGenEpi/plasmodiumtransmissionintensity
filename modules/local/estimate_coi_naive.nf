@@ -9,6 +9,11 @@ process ESTIMATE_COI_NAIVE {
 
     def output_filename = "coi_table.tsv"
 
+    publishDir(
+        path: "${params.outDIR}/COI/naive",
+        mode: 'copy'
+    )
+    
     input:
     path allele_table
     val method
