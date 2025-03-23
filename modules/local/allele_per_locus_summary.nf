@@ -21,6 +21,6 @@ process ALLELE_PER_LOCUS_SUMMARY {
     script:
     """
     Rscript ${projectDir}/bin/PGEcore/scripts/allele_per_locus_summary/allele_per_locus_summary.R \\
-        --allele_table ${allele_table} 
+        --allele_table ${allele_table}
     """
 }

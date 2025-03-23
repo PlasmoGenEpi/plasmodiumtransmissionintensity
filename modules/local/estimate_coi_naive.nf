@@ -13,7 +13,6 @@ process ESTIMATE_COI_NAIVE {
         path: "${params.outdir}/COI/naive",
         mode: 'copy'
     )
-    
     input:
     path allele_table
     val method

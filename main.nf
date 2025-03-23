@@ -83,7 +83,7 @@ workflow {
     // WORKFLOW: Run main workflow
     //
     NFCORE_PLASMODIUMTRANSMISSIONINTENSITY (
-        params.allele_table, 
+        params.allele_table,
         params.naive_coi_method
     )
     //

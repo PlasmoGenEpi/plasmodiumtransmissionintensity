@@ -21,6 +21,6 @@ process PER_LOCUS_POPGEN_SUMMARY {
     script:
     """
     Rscript ${projectDir}/bin/PGEcore/scripts/per_locus_popgen_summary_wrapper/per_locus_tajima_d_summary_wrapper.R \\
-        --allele_table ${allele_table} 
+        --allele_table ${allele_table}
     """
 }
