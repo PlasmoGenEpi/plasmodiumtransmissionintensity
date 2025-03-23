@@ -10,7 +10,7 @@ process ESTIMATE_COI_NAIVE {
     def output_filename = "coi_table.tsv"
 
     publishDir(
-        path: "${params.outDIR}/COI/naive",
+        path: "${params.outdir}/COI/naive",
         mode: 'copy'
     )
     

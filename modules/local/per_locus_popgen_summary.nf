@@ -8,7 +8,7 @@ process PER_LOCUS_POPGEN_SUMMARY {
     label 'process_single'
 
     publishDir(
-        path: "${params.outDIR}/per_locus_summaries/popgen",
+        path: "${params.outdir}/per_locus_summaries/popgen",
         mode: 'copy'
     )
 

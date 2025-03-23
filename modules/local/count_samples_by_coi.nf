@@ -12,7 +12,7 @@ process COUNT_SAMPLES_BY_COI {
     val method
 
     publishDir(
-        path: "${params.outDIR}/COI/${method}/",
+        path: "${params.outdir}/COI/${method}/",
         mode: 'copy'
     )
 

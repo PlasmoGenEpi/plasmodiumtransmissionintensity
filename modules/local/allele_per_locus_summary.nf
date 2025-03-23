@@ -8,7 +8,7 @@ process ALLELE_PER_LOCUS_SUMMARY {
     label 'process_single'
 
     publishDir(
-        path: "${params.outDIR}/per_locus_summaries/allele_counts",
+        path: "${params.outdir}/per_locus_summaries/allele_counts",
         mode: 'copy'
     )
 
