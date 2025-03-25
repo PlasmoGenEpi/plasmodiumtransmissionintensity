@@ -13,6 +13,7 @@ nextflow_process {
             process {
                 """
                 input[0] = file("${projectDir}/tests/input/example_coi_table.tsv")
+                input[1] = "integer_method"
                 """
             }
         }
