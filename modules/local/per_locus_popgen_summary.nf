@@ -1,0 +1,26 @@
+/*
+ * STEP - PER_LOCUS_POPGEN_SUMMARY
+ * Calculate simple popgen stats per locus
+ */
+
+process PER_LOCUS_POPGEN_SUMMARY {
+
+    label 'process_single'
+
+    publishDir(
+        path: "${params.outdir}/per_locus_summaries/popgen",
+        mode: 'copy'
+    )
+
+    input:
+    path allele_table
+
+    output:
+    path ("per_locus_popgen_summary.tsv"), emit: per_locus_popgen_summary
+
+    script:
+    """
+    Rscript ${projectDir}/bin/PGEcore/scripts/per_locus_popgen_summary_wrapper/per_locus_tajima_d_summary_wrapper.R \\
+        --allele_table ${allele_table}
+    """
+}

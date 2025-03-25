@@ -43,7 +43,8 @@ params.fasta = getGenomeAttribute('fasta')
 workflow NFCORE_PLASMODIUMTRANSMISSIONINTENSITY {
 
     take:
-    samplesheet // channel: samplesheet read in from --input
+    allele_table // channel: samplesheet read in from --input
+    naive_coi_method
 
     main:
 
@@ -51,10 +52,11 @@ workflow NFCORE_PLASMODIUMTRANSMISSIONINTENSITY {
     // WORKFLOW: Run pipeline
     //
     PLASMODIUMTRANSMISSIONINTENSITY (
-        samplesheet
+        allele_table,
+        naive_coi_method
     )
-    emit:
-    multiqc_report = PLASMODIUMTRANSMISSIONINTENSITY.out.multiqc_report // channel: /path/to/multiqc_report.html
+    // emit:
+    // multiqc_report = PLASMODIUMTRANSMISSIONINTENSITY.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,33 +70,34 @@ workflow {
     //
     // SUBWORKFLOW: Run initialisation tasks
     //
-    PIPELINE_INITIALISATION (
-        params.version,
-        params.validate_params,
-        params.monochrome_logs,
-        args,
-        params.outdir,
-        params.input
-    )
+    // PIPELINE_INITIALISATION (
+    //     params.version,
+    //     params.validate_params,
+    //     params.monochrome_logs,
+    //     args,
+    //     params.outdir,
+    //     params.input
+    // )
 
     //
     // WORKFLOW: Run main workflow
     //
     NFCORE_PLASMODIUMTRANSMISSIONINTENSITY (
-        PIPELINE_INITIALISATION.out.samplesheet
+        params.allele_table,
+        params.naive_coi_method
     )
     //
     // SUBWORKFLOW: Run completion tasks
     //
-    PIPELINE_COMPLETION (
-        params.email,
-        params.email_on_fail,
-        params.plaintext_email,
-        params.outdir,
-        params.monochrome_logs,
-        params.hook_url,
-        NFCORE_PLASMODIUMTRANSMISSIONINTENSITY.out.multiqc_report
-    )
+    // PIPELINE_COMPLETION (
+    //     params.email,
+    //     params.email_on_fail,
+    //     params.plaintext_email,
+    //     params.outdir,
+    //     params.monochrome_logs,
+    //     params.hook_url,
+    //     NFCORE_PLASMODIUMTRANSMISSIONINTENSITY.out.multiqc_report
+    // )
 }
 
 /*

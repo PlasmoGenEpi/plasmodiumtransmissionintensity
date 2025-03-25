@@ -1,0 +1,26 @@
+nextflow_process {
+
+    name "Test Process PER_LOCUS_POPGEN_SUMMARY"
+    script "modules/local/per_locus_popgen_summary.nf"
+    process "PER_LOCUS_POPGEN_SUMMARY"
+
+    test("Per locus popgen summary should run without failures") {
+
+        when {
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = file("${projectDir}/tests/input/example2_allele_table.tsv")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.per_locus_popgen_summary != null
+            assert path(process.out.per_locus_popgen_summary.get(0)).md5 == "298814ce03a699100f95ae9b6b212cae"
+        }
+
+    }
+
+}
